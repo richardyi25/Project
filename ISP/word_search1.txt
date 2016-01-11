@@ -1,0 +1,21 @@
+20
+Swift 13 15 9 15 
+Java 1 11 1 14 
+C-Sharp(C#) 6 14 6 9 
+PHP 7 14 9 12 
+SQL 12 14 14 14 
+CPlusPlus(C++) 15 14 15 6 
+Matlab 4 8 4 13 
+Python 14 13 9 13 
+Pascal 14 13 14 8 
+Ruby 13 12 13 9 
+JavaScript 2 1 2 11 
+Groovy 8 11 13 6 
+ABAP 10 11 13 8 
+Assembly 10 7 3 7 
+COBOL 12 6 8 6 
+Perl 7 4 4 7 
+SAS 12 4 14 4 
+Fortran 5 3 11 3 
+Objective-C 6 2 15 2 
+VisualBasic 4 1 14 1 
