@@ -1,0 +1,17 @@
+16
+Autokey 9 9 3 15
+Playfair 10 8 10 15
+Atbash 14 10 14 15
+MorseCode 1 14 9 6
+OpenSSL 2 14 8 14
+CaesarianShift 11 1 11 14
+ROTThirteen 12 14 12 4
+DiffieHellman 15 14 15 2
+RSA 3 13 5 11
+Enigma 2 7 2 12
+EllipticCurve 13 13 13 1
+Bifid 1 6 1 10
+Affine 5 8 5 3
+Baconian 10 5 3 5
+Trifid 10 2 5 2
+Vigenere 2 1 9 1

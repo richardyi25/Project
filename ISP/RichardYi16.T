@@ -11,6 +11,7 @@
 %Procedure/Importing/Settings Declaration
 %===========================
 import GUI
+
 GUI.SetDisplayWhenCreated (false) %Buttons will only show up when GUI.Show'ed
 
 forward proc title
@@ -18,9 +19,7 @@ forward proc intro
 forward proc help
 forward proc mainMenu
 forward proc askTimed
-forward proc wordSearch1
-forward proc wordSearch2
-forward proc wordSearch3
+forward proc wordSearch (number : int)
 forward proc display (win : boolean)
 forward proc goodBye
 forward proc goToWordSearch
@@ -31,11 +30,11 @@ forward proc giveUp
 %=====================
 
 %Windows
-var window := Window.Open ("position:center;center;graphics:600;600;nobuttonbar")
+var window := Window.Open ("position:center;center;graphics:1000;600;nobuttonbar")
 %Only one screen, centered and max size
 
 %Buttons
-var introButton := GUI.CreateButton (248, 0, 0, "Launch Game", mainMenu) % 103
+var introButton := GUI.CreateButton (448, 0, 0, "Launch Game", mainMenu) % 103
 var playButton := GUI.CreateButton (256, 48, 0, "Play Game", askTimed) % 87
 var helpButton := GUI.CreateButton (239, 24, 0, "Help/Instructions", help) % 121
 var quitButton := GUI.CreateButton (272, 0, 0, "Quit", goodBye) % 55
@@ -46,12 +45,12 @@ var giveUpButton := GUI.CreateButton (264, 24, 0, "Give Up", giveUp) % 71
 
 %Values
 var inputLocked : boolean := false
-var wordSearchOrder : array 1 .. 3 of int
+var wordSearchOrder : array 1 .. 2 of int := init (1, 2)
 var wordSearchCounter : int := 1
 var timeLimit, timeLeft : int
 
 %Fonts
-var titleFont := Font.New ("Cambria:30")
+var titleFont := Font.New ("Verdana:30")
 %======================================
 %Procedure/Function/Process Delcaration
 %======================================
@@ -77,29 +76,19 @@ process countTime
     end if
 end countTime
 
-proc randomizeOrder
-    var numbers : array 1 .. 3 of int := init (1, 2, 3) %numbers 1 to 3
-    var pos1, pos2, num1, num2 : int
-
-    for i : 1 .. Rand.Int (1, 6) %Switch between 1-6 times
-	%Switch 2 random places
-	pos1 := Rand.Int (1, 3)
-	pos2 := Rand.Int (1, 3) %Choose 2 random positions
-
-	num1 := numbers (pos1)
-	num2 := numbers (pos2) %Get values
-
-	numbers (pos1) := num2
-	numbers (pos2) := num1 %Switch positions
+proc shuffleOrder
+    %Turing Implementation of the Fisher-Yates shuffle
+    var random, temp : int
+    for decreasing i : upper (wordSearchOrder) .. 1
+	random := Rand.Int (1, i)
+	temp := wordSearchOrder (i)
+	wordSearchOrder (i) := wordSearchOrder (random)
+	wordSearchOrder (random) := temp
     end for
-
-    for i : 1 .. 3
-	wordSearchOrder (i) := numbers (i) %Copy to wordSearchOrder
-    end for
-end randomizeOrder
+end shuffleOrder
 
 proc nextWordSearch
-    if wordSearchCounter = 3 then
+    if wordSearchCounter = 2 then
 	wordSearchCounter := 1
     else
 	wordSearchCounter += 1
@@ -107,15 +96,7 @@ proc nextWordSearch
 end nextWordSearch
 
 body proc goToWordSearch
-    %Redirects to cuurent word search
-    case wordSearchOrder (wordSearchCounter) of
-	label 1 :
-	    wordSearch1
-	label 2 :
-	    wordSearch2
-	label 3 :
-	    wordSearch3
-    end case
+    wordSearch (wordSearchOrder (wordSearchCounter))
 end goToWordSearch
 
 body proc title
@@ -133,9 +114,100 @@ body proc title
     %Hide all buttons
 end title
 
-function userInput () : array 1 .. 4 of int
+fcn userInput () : array 1 .. 4 of int
 
+    var xCoord, yCoord, button : int
+    var xRange, yRange : int
+    var firstClick : boolean := true
+    var click1X, click1Y, click2X, click2Y : int := -50
+    var rise, run : int
+    var coordinates : array 1 .. 4 of int
+
+    loop
+	mousewhere (xCoord, yCoord, button)
+	xRange := xCoord - ((xCoord - 75) mod 30)
+	yRange := yCoord - ((yCoord - 25) mod 30)
+
+	if button = 1 and inputLocked = false then
+	    fork lockInput (300)
+
+	    if xCoord >= 75 and xCoord <= 525 and yCoord >= 25 and yCoord <= 475 then
+		%Begin complicated control flow
+		if firstClick then %If first click
+		    click1X := xRange
+		    click1Y := yRange
+		    drawbox (xRange, yRange, xRange + 30, yRange + 30, green)
+		    drawbox (xRange + 1, yRange + 1, xRange + 29, yRange + 29, green)
+		    %Select box
+		    firstClick := false
+		else %If second click
+		    if xRange = click1X and yRange = click1Y then %If clicked on same box as first click
+			drawbox (xRange, yRange, xRange + 30, yRange + 30, yellow)
+			drawbox (xRange + 1, yRange + 1, xRange + 29, yRange + 29, yellow)
+
+			firstClick := true
+			%Deselect box
+		    else %Otherwise
+			click2X := xRange
+			click2Y := yRange
+			rise := click2Y - click1Y
+			run := click2X - click1X
+
+			if rise = 0 or run = 0 or rise / run = 1 or rise / run = -1 then
+			    %If is a valid line (horizontal, vertical, or slope is 1 or -1)
+			    coordinates (1) := (click1X - 75) div 30 + 1
+			    coordinates (2) := (click1Y - 25) div 30 + 1
+			    coordinates (3) := (click2X - 75) div 30 + 1
+			    coordinates (4) := (click2Y - 25) div 30 + 1
+			    %Add click coordinates to return array
+
+			    drawbox (xRange, yRange, xRange + 30, yRange + 30, green)
+			    drawbox (xRange + 1, yRange + 1, xRange + 29, yRange + 29, green)
+
+			    %Select box
+
+			    delay (500)
+
+			    drawbox (click1X, click1Y, click1X + 30, click1Y + 30, yellow)
+			    drawbox (click1X + 1, click1Y + 1, click1X + 29, click1Y + 29, yellow)
+
+			    drawbox (xRange + 1, yRange + 1, xRange + 29, yRange + 29, yellow)
+			    drawbox (xRange, yRange, xRange + 30, yRange + 30, yellow)
+
+			    result coordinates
+			else
+			    drawbox (xRange, yRange, xRange + 30, yRange + 30, red)
+			    drawbox (xRange + 1, yRange + 1, xRange + 29, yRange + 29, red)
+			    %Error highlight
+			    delay (500)
+			    drawbox (click1X, click1Y, click1X + 30, click1Y + 30, yellow)
+			    drawbox (click1X + 1, click1Y + 1, click1X + 29, click1Y + 29, yellow)
+
+			    drawbox (xRange, yRange, xRange + 30, yRange + 30, yellow)
+			    drawbox (xRange + 1, yRange + 1, xRange + 29, yRange + 29, yellow)
+
+			    firstClick := true
+			    %Deselect both clicks
+			end if
+		    end if
+		end if
+	    end if
+	end if
+    end loop
 end userInput
+
+proc fillRandom
+    var font := Font.New ("Comic Sans MS:15")
+
+    for x : 75 .. 524 by 30
+	for y : 25 .. 474 by 30
+	    Font.Draw (chr (Rand.Int (65, 90)), x + 5, y + 5, font, black)
+	    drawbox (x, y, x + 30, y + 30, yellow)
+	    drawbox (x + 1, y + 1, x + 29, y + 29, 92)
+	end for
+    end for
+end fillRandom
+
 
 body proc giveUp
     nextWordSearch % Skip current word search
@@ -149,10 +221,24 @@ end giveUp
 
 body proc intro
     %Fancy Animation
-    put "This is an animation"
-    delay (1000)
+    put "Loading music..."
+    put "*Any delay you experience is real"
+
+    var middle : int := Rand.Int (300, 700)
+
+    for i : 1 .. middle
+	delay (1)
+	drawoval (i, 300, 10, 10, black)
+    end for
+
+    %fork playMusic ("threes.mp3")
+
+    for i : middle .. 1000
+	delay (1)
+	drawoval (i, 300, 10, 10, black)
+    end for
+
     GUI.Show (introButton)
-    fork playMusic("threes.mp3")
 end intro
 
 body proc mainMenu
@@ -181,26 +267,82 @@ body proc askTimed
     GUI.Show (backToMenuButton)
 end askTimed
 
-body proc wordSearch1
+body proc wordSearch (number : int)
     title
-    put "Word Search 1"
-    GUI.Show (giveUpButton)
-    GUI.Show (backToMenuButton)
-end wordSearch1
 
-body proc wordSearch2
-    title
-    put "Word Search 2"
-    GUI.Show (giveUpButton)
-    GUI.Show (backToMenuButton)
-end wordSearch2
+    fillRandom
 
-body proc wordSearch3
-    title
-    put "Word Search 3"
+    var inputStream : int
+    var inputFile : string
+    var numberOfLines : int
+    var lineNumber : int := 0
+
+    var word : string
+    var coordinate : int
+    %Temporary Values from file
+
+    var xChange, yChange : int
+    var xPos, yPos : int
+    %For drawing the word intro the grid
+
+    inputFile := "word_search" + intstr (number) + ".txt"
+    open : inputStream, inputFile, get
+    %Open a file based on the word search number
+
+    get : inputStream, numberOfLines
+    %The first line of the file wil contain the amount of preceding lines
+
+    var words : array 1 .. numberOfLines of string
+    var coordinates : array 1 .. numberOfLines of array 1 .. 4 of int
+    %Make a words array and coordinates array, with its length being the amount of lines
+
+    loop
+	%For each line
+	exit when eof (inputStream)
+	lineNumber += 1
+
+	get : inputStream, word
+	words (lineNumber) := word
+	%Get the word
+
+	for i : 1 .. 4 %Get the 4 coordinates
+	    get : inputStream, coordinate
+	    coordinates (lineNumber) (i) := coordinate
+	end for
+    end loop
+
+    close : inputStream
+
+    var font := Font.New ("Comic Sans MS:15")
+
+    for i : 1 .. upper (coordinates)
+	xChange := (coordinates (i) (3) - coordinates (i) (1)) div (length (words (i)) - 1)
+	yChange := (coordinates (i) (4) - coordinates (i) (2)) div (length (words (i)) - 1)
+
+	for i2 : 0 .. length (words (i)) - 1
+	    xPos := coordinates (i) (1) + (i2 * xChange)
+	    yPos := coordinates (i) (2) + (i2 * yChange)
+
+	    drawfillbox (xPos * 30 + 47, yPos * 30 - 3, xPos * 30 + 73, yPos * 30 + 23, white)
+	    Font.Draw (Str.Upper (words (i) (i2 + 1)), xPos * 30 + 50, yPos * 30, font, red)
+	end for
+    end for
+
+    loop
+
+	var a : array 1 .. 4 of int
+
+	a := userInput ()
+
+	locate (1, 1)
+	put "(", a (1), ", ", a (2), ")"
+	put "(", a (3), ", ", a (4), ")"
+    end loop
+
+    %put "Word Search ", number
     GUI.Show (giveUpButton)
     GUI.Show (backToMenuButton)
-end wordSearch3
+end wordSearch
 
 body proc display (win : boolean)
     title
@@ -221,13 +363,12 @@ body proc goodBye
     Window.Close (window)
 end goodBye
 
-
 %============
 %Main Program
 %============
-
-randomizeOrder
 intro
+shuffleOrder
+
 loop
     exit when GUI.ProcessEvent
 end loop

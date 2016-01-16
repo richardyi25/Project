@@ -1,3 +1,5 @@
+setscreen("text")
+
 var inputStream : int
 var numberOfLines : int
 var lineNumber : int := 0
@@ -30,5 +32,9 @@ close : inputStream
 
 %Basic display
 for i : 1 .. upper (words)
-    put words (i)
+    put words (i), ":"
+    for i2 : 1 .. 4
+	put coordinates (i, i2), " " ..
+    end for
+    put ""
 end for
