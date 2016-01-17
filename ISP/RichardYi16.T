@@ -77,13 +77,18 @@ process countTime
 end countTime
 
 proc shuffleOrder
+    %Shuffles wordSearchOrder array
     %Turing Implementation of the Fisher-Yates shuffle
     var random, temp : int
-    for decreasing i : upper (wordSearchOrder) .. 1
+    for decreasing i : upper (wordSearchOrder) .. 2
+	%From length of the array down to 1
 	random := Rand.Int (1, i)
+	%Pick a random number from 1 to i
+
 	temp := wordSearchOrder (i)
 	wordSearchOrder (i) := wordSearchOrder (random)
 	wordSearchOrder (random) := temp
+	%Swap the indexes with a temporary variable
     end for
 end shuffleOrder
 
@@ -102,7 +107,7 @@ end goToWordSearch
 body proc title
     cls %Clear Screen
 
-    Font.Draw ("Word Search", 189, 560, titleFont, black)
+    Font.Draw ("Word Search", 371, 560, titleFont, black)
 
     GUI.Hide (introButton)
     GUI.Hide (playButton)
@@ -115,11 +120,16 @@ body proc title
 end title
 
 fcn userInput () : array 1 .. 4 of int
-
     var xCoord, yCoord, button : int
+    %Stores mousewhere coordinates
+
     var xRange, yRange : int
+    %Stores coordinate ranges
+
     var firstClick : boolean := true
-    var click1X, click1Y, click2X, click2Y : int := -50
+    %Whether the user's click is the first
+
+    var click1X, click1Y, click2X, click2Y : int
     var rise, run : int
     var coordinates : array 1 .. 4 of int
 
@@ -127,31 +137,41 @@ fcn userInput () : array 1 .. 4 of int
 	mousewhere (xCoord, yCoord, button)
 	xRange := xCoord - ((xCoord - 75) mod 30)
 	yRange := yCoord - ((yCoord - 25) mod 30)
+	%Round coordinates to nearest 30 x 30 box
+	%e.g. (123, 321) rounds to (120, 300)
 
 	if button = 1 and inputLocked = false then
 	    fork lockInput (300)
 
 	    if xCoord >= 75 and xCoord <= 525 and yCoord >= 25 and yCoord <= 475 then
-		%Begin complicated control flow
+		%If the user clicks in the word search box
+
 		if firstClick then %If first click
 		    click1X := xRange
 		    click1Y := yRange
+		    %Store coordinates
+
 		    drawbox (xRange, yRange, xRange + 30, yRange + 30, green)
 		    drawbox (xRange + 1, yRange + 1, xRange + 29, yRange + 29, green)
 		    %Select box
 		    firstClick := false
+
 		else %If second click
 		    if xRange = click1X and yRange = click1Y then %If clicked on same box as first click
 			drawbox (xRange, yRange, xRange + 30, yRange + 30, yellow)
 			drawbox (xRange + 1, yRange + 1, xRange + 29, yRange + 29, yellow)
-
 			firstClick := true
 			%Deselect box
+			%No longer first click
+
 		    else %Otherwise
 			click2X := xRange
 			click2Y := yRange
+			%Store coordinates
+
 			rise := click2Y - click1Y
 			run := click2X - click1X
+			%Calculate rise and run
 
 			if rise = 0 or run = 0 or rise / run = 1 or rise / run = -1 then
 			    %If is a valid line (horizontal, vertical, or slope is 1 or -1)
@@ -163,7 +183,6 @@ fcn userInput () : array 1 .. 4 of int
 
 			    drawbox (xRange, yRange, xRange + 30, yRange + 30, green)
 			    drawbox (xRange + 1, yRange + 1, xRange + 29, yRange + 29, green)
-
 			    %Select box
 
 			    delay (500)
@@ -173,12 +192,16 @@ fcn userInput () : array 1 .. 4 of int
 
 			    drawbox (xRange + 1, yRange + 1, xRange + 29, yRange + 29, yellow)
 			    drawbox (xRange, yRange, xRange + 30, yRange + 30, yellow)
+			    %Deselect boxes
 
 			    result coordinates
-			else
+			    %Return coordinates array
+
+			else %If invalid slope
 			    drawbox (xRange, yRange, xRange + 30, yRange + 30, red)
 			    drawbox (xRange + 1, yRange + 1, xRange + 29, yRange + 29, red)
 			    %Error highlight
+
 			    delay (500)
 			    drawbox (click1X, click1Y, click1X + 30, click1Y + 30, yellow)
 			    drawbox (click1X + 1, click1Y + 1, click1X + 29, click1Y + 29, yellow)
@@ -203,11 +226,10 @@ proc fillRandom
 	for y : 25 .. 474 by 30
 	    Font.Draw (chr (Rand.Int (65, 90)), x + 5, y + 5, font, black)
 	    drawbox (x, y, x + 30, y + 30, yellow)
-	    drawbox (x + 1, y + 1, x + 29, y + 29, 92)
+	    drawbox (x + 1, y + 1, x + 29, y + 29, yellow)
 	end for
     end for
 end fillRandom
-
 
 body proc giveUp
     nextWordSearch % Skip current word search
@@ -217,7 +239,6 @@ end giveUp
 
 %Program Screens Procedures
 %--------------------------
-
 
 body proc intro
     %Fancy Animation
@@ -231,7 +252,7 @@ body proc intro
 	drawoval (i, 300, 10, 10, black)
     end for
 
-    %fork playMusic ("threes.mp3")
+    fork playMusic ("threes.mp3")
 
     for i : middle .. 1000
 	delay (1)
@@ -272,18 +293,36 @@ body proc wordSearch (number : int)
 
     fillRandom
 
+    var letterFont := Font.New ("Comic Sans MS:15")
+    var wordFont := Font.New ("Comic Sans MS:13")
+    var nameFont := Font.New ("Calibri:20:bold")
+
     var inputStream : int
     var inputFile : string
     var numberOfLines : int
     var lineNumber : int := 0
+    %File I/O Variables
+
+    var name : string
+    var nameWidth : int
+    %Name of word search, and width of the text
 
     var word : string
     var coordinate : int
-    %Temporary Values from file
+    %Stores the word list and coordinates list from the file
 
     var xChange, yChange : int
     var xPos, yPos : int
     %For drawing the word intro the grid
+
+    var match : boolean
+    %For when checking if the clicked coordinates
+    %matches a word
+    var matchNumber : int
+    %Stores which set of coordinates matched with the input
+
+    var inputCoordinates : array 1 .. 4 of int
+    %Stores what coordinates the user clicked on
 
     inputFile := "word_search" + intstr (number) + ".txt"
     open : inputStream, inputFile, get
@@ -292,9 +331,12 @@ body proc wordSearch (number : int)
     get : inputStream, numberOfLines
     %The first line of the file wil contain the amount of preceding lines
 
-    var words : array 1 .. numberOfLines of string
+    get : inputStream, name : *
+    %The second line is the name of the word search
+
+    var words : flexible array 1 .. numberOfLines of string
     var coordinates : array 1 .. numberOfLines of array 1 .. 4 of int
-    %Make a words array and coordinates array, with its length being the amount of lines
+    %Make a words array and coordinates array, with their lengths being the amount of lines
 
     loop
 	%For each line
@@ -313,30 +355,80 @@ body proc wordSearch (number : int)
 
     close : inputStream
 
-    var font := Font.New ("Comic Sans MS:15")
+    nameWidth := Font.Width (name, nameFont)
+    Font.Draw (name, 300 - nameWidth div 2, 500, nameFont, black)
+    %Draw the name of wordsearch, centered with Font.Width
 
     for i : 1 .. upper (coordinates)
+	%For all sets of coordinates
+
 	xChange := (coordinates (i) (3) - coordinates (i) (1)) div (length (words (i)) - 1)
 	yChange := (coordinates (i) (4) - coordinates (i) (2)) div (length (words (i)) - 1)
+	%Find the direction for the x and y
+	%e.g. (1, 1), (1, 3) has a direction of 0, 1
+	%because x remains constant and y goes up
 
 	for i2 : 0 .. length (words (i)) - 1
+	    %Iterating though the charaters of word (i)
+
 	    xPos := coordinates (i) (1) + (i2 * xChange)
 	    yPos := coordinates (i) (2) + (i2 * yChange)
+	    %Find the position of where to put the letter
 
 	    drawfillbox (xPos * 30 + 47, yPos * 30 - 3, xPos * 30 + 73, yPos * 30 + 23, white)
-	    Font.Draw (Str.Upper (words (i) (i2 + 1)), xPos * 30 + 50, yPos * 30, font, red)
+	    %Clear the current letter from its box
+
+	    Font.Draw (Str.Upper (words (i) (i2 + 1)), xPos * 30 + 50, yPos * 30, letterFont, red)
+	    %Add the letter into the box
 	end for
     end for
 
+    for i : 1 .. upper (words)
+	%For each element in words
+	Font.Draw (words (i), 550, 475 - i * 25, wordFont, black)
+    end for
+
     loop
+	inputCoordinates := userInput ()
+	%Get user input
 
-	var a : array 1 .. 4 of int
+	matchNumber := 0
 
-	a := userInput ()
+	for i : 1 .. upper (coordinates)
+	    matchNumber += 1
+	    %Increment matchNumber
+
+	    match := true
+	    %Assume that the coordinates match
+
+	    for i2 : 1 .. 4
+		if inputCoordinates (i2) not= coordinates (i) (i2) then
+		    match := false
+		    %If one of them doesn't match, they all don't match
+		end if
+	    end for
+
+	    exit when match = true
+	    %When all 4 match, stop searching
+	end for
 
 	locate (1, 1)
-	put "(", a (1), ", ", a (2), ")"
-	put "(", a (3), ", ", a (4), ")"
+
+	if match = true then %If a match was found
+	    Draw.ThickLine (coordinates (matchNumber) (1) * 30 + 60, coordinates (matchNumber) (2) * 30 + 10, coordinates (matchNumber) (3) * 30 + 60, coordinates (matchNumber) (4) * 30 + 10, 2,
+		black)
+	    %Cross out word on word search
+
+	    for i : matchNumber .. upper (words) - 1
+		words (i) := words (i + 1)
+		new words, upper (words) - 1
+	    end for
+	    %From the found word to the length of array minus 1
+	    %Shift all indexes left 1, then resize array to itself minus 1
+	    %Basically deleting the word from the array
+	else
+	    put "Not a word!"
+	end if
     end loop
 
     %put "Word Search ", number
@@ -366,8 +458,8 @@ end goodBye
 %============
 %Main Program
 %============
-intro
 shuffleOrder
+intro
 
 loop
     exit when GUI.ProcessEvent

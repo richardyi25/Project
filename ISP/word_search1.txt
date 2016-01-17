@@ -1,4 +1,5 @@
 20
+Programming Languages
 ABAP 10 11 13 8 
 Assembly 10 7 3 7 
 COBOL 12 6 8 6 
@@ -7,15 +8,13 @@ CSharp 6 14 6 9
 Fortran 5 3 11 3 
 Groovy 8 11 13 6 
 Java 1 11 1 14 
-JavaScript 2 1 2 11 
+JavaScript 2 1 2 10
 Matlab 4 8 4 13 
 ObjectiveC 6 2 15 2 
 Pascal 14 13 14 8 
-Perl 7 4 4 7 
-PHP 7 14 9 12 
+Perl 7 4 4 7
 Python 14 13 9 13 
 Ruby 13 12 13 9 
-SAS 12 4 14 4 
 SQL 12 14 14 14 
 Swift 13 15 9 15 
 VisualBasic 4 1 14 1 
