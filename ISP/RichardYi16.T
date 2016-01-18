@@ -38,9 +38,9 @@ var introButton := GUI.CreateButton (448, 0, 0, "Launch Game", mainMenu) % 103
 var playButton := GUI.CreateButton (256, 48, 0, "Play Game", askTimed) % 87
 var helpButton := GUI.CreateButton (239, 24, 0, "Help/Instructions", help) % 121
 var quitButton := GUI.CreateButton (272, 0, 0, "Quit", goodBye) % 55
-var backToMenuButton := GUI.CreateButton (226, 0, 0, "Go back to main menu", mainMenu) % 148
+var backToMenuButton := GUI.CreateButton (800, 0, 0, "Go back to main menu", mainMenu) % 148
 var confirmButton := GUI.CreateButton (242, 24, 0, "Confirm Choice", goToWordSearch) % 115
-var giveUpButton := GUI.CreateButton (264, 24, 0, "Give Up", giveUp) % 71
+var giveUpButton := GUI.CreateButton (800, 24, 0, "Give Up", giveUp) % 71
 %MOVE COORDINATES!
 
 %Values
@@ -52,6 +52,7 @@ var timeLeft : int
 var backgroundColor : int
 %Fonts
 var titleFont := Font.New ("Verdana:30")
+var headerFont := Font.New ("Verdana:20")
 %======================================
 %Procedure/Function/Process Delcaration
 %======================================
@@ -159,6 +160,8 @@ fcn userInput () : array 1 .. 4 of int
 	if button = 1 and inputLocked = false then
 	    fork lockInput (300)
 
+	    exit when xCoord >= 800 and xCoord <= 950 and yCoord >= 0 and yCoord <= 50
+
 	    if xCoord >= 75 and xCoord <= 525 and yCoord >= 25 and yCoord <= 475 then
 		%If the user clicks in the word search box
 
@@ -265,22 +268,13 @@ end giveUp
 
 body proc intro
     %Fancy Animation
-    put "Loading music..."
-    put "*Any delay you experience is real"
+    Font.Draw ("Loading music...", 0, 550, headerFont, black)
+    Font.Draw ("*Any delay you experience is real", 0, 500, headerFont, black)
 
-    var middle : int := Rand.Int (300, 700)
+    fork playMusic ("threes.mp3")
 
-    for i : 1 .. middle
-	delay (1)
-	drawoval (i, 300, 10, 10, black)
-    end for
-
-    %fork playMusic ("threes.mp3")
-
-    for i : middle .. 1000
-	delay (1)
-	drawoval (i, 300, 10, 10, black)
-    end for
+    delay (200)
+    cls
 
     GUI.Show (introButton)
 end intro
@@ -338,6 +332,9 @@ end askTimed
 
 body proc wordSearch (number : int)
     title
+
+    GUI.Show (giveUpButton)
+    GUI.Show (backToMenuButton)
 
     fork countTime
     %Start timer
@@ -524,9 +521,6 @@ body proc wordSearch (number : int)
 	    end if
 	end if
     end loop
-
-    GUI.Show (giveUpButton)
-    GUI.Show (backToMenuButton)
 end wordSearch
 
 body proc display (win : boolean)
