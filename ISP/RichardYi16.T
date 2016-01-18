@@ -45,10 +45,10 @@ var giveUpButton := GUI.CreateButton (264, 24, 0, "Give Up", giveUp) % 71
 
 %Values
 var inputLocked : boolean := false
-var wordSearchOrder : array 1 .. 2 of int := init (1, 2)
+var wordSearchOrder : array 1 .. 3 of int := init (1, 2, 3)
 var wordSearchCounter : int := 1
 var timeLimit, timeLeft : int
-
+var backgroundColor : int
 %Fonts
 var titleFont := Font.New ("Verdana:30")
 %======================================
@@ -70,10 +70,8 @@ process playMusic (file : string)
 end playMusic
 
 process countTime
-    %decrement time variable
-    if /*time is up*/ 1 = 1 then
-	display (false) %User loses
-    end if
+    timeLeft -= 1
+    delay(1000)
 end countTime
 
 proc shuffleOrder
@@ -93,7 +91,7 @@ proc shuffleOrder
 end shuffleOrder
 
 proc nextWordSearch
-    if wordSearchCounter = 2 then
+    if wordSearchCounter = 3 then
 	wordSearchCounter := 1
     else
 	wordSearchCounter += 1
@@ -105,9 +103,11 @@ body proc goToWordSearch
 end goToWordSearch
 
 body proc title
-    cls %Clear Screen
+    backgroundColor := RGB.AddColor (Rand.Int (600, 1000) / 1000, Rand.Int (600, 1000) / 1000, Rand.Int (600, 1000) / 1000)
+    %Create a random bright color
 
-    Font.Draw ("Word Search", 371, 560, titleFont, black)
+    colorback (backgroundColor)
+    %Set background color
 
     GUI.Hide (introButton)
     GUI.Hide (playButton)
@@ -117,6 +117,10 @@ body proc title
     GUI.Hide (backToMenuButton)
     GUI.Hide (confirmButton)
     %Hide all buttons
+
+    cls %Clear Screen
+
+    Font.Draw ("Word Search", 371, 560, titleFont, black)
 end title
 
 fcn userInput () : array 1 .. 4 of int
@@ -217,6 +221,8 @@ fcn userInput () : array 1 .. 4 of int
 	    end if
 	end if
     end loop
+    
+    
 end userInput
 
 proc fillRandom
@@ -252,7 +258,7 @@ body proc intro
 	drawoval (i, 300, 10, 10, black)
     end for
 
-    fork playMusic ("threes.mp3")
+    %fork playMusic ("threes.mp3")
 
     for i : middle .. 1000
 	delay (1)
@@ -315,11 +321,13 @@ body proc wordSearch (number : int)
     var xPos, yPos : int
     %For drawing the word intro the grid
 
-    var match : boolean
-    %For when checking if the clicked coordinates
-    %matches a word
-    var matchNumber : int
+    var match, wordMatch : boolean
+    %For when checking if the clicked coordinates match a word
+    %For checking if a word is found in wordList
+
+    var matchNumber, wordMatchNumber : int
     %Stores which set of coordinates matched with the input
+    %Stores which word was found
 
     var inputCoordinates : array 1 .. 4 of int
     %Stores what coordinates the user clicked on
@@ -334,9 +342,12 @@ body proc wordSearch (number : int)
     get : inputStream, name : *
     %The second line is the name of the word search
 
-    var words : flexible array 1 .. numberOfLines of string
+    var words : array 1 .. numberOfLines of string
     var coordinates : array 1 .. numberOfLines of array 1 .. 4 of int
     %Make a words array and coordinates array, with their lengths being the amount of lines
+
+    var wordList : flexible array 1 .. numberOfLines of string
+    %This stores the words that are haven't been found yet (dynamic array)
 
     loop
 	%For each line
@@ -345,7 +356,8 @@ body proc wordSearch (number : int)
 
 	get : inputStream, word
 	words (lineNumber) := word
-	%Get the word
+	wordList (lineNumber) := word
+	%Get the word and put into word arrays
 
 	for i : 1 .. 4 %Get the 4 coordinates
 	    get : inputStream, coordinate
@@ -354,6 +366,8 @@ body proc wordSearch (number : int)
     end loop
 
     close : inputStream
+
+    %Copy words to wordsList
 
     nameWidth := Font.Width (name, nameFont)
     Font.Draw (name, 300 - nameWidth div 2, 500, nameFont, black)
@@ -375,7 +389,7 @@ body proc wordSearch (number : int)
 	    yPos := coordinates (i) (2) + (i2 * yChange)
 	    %Find the position of where to put the letter
 
-	    drawfillbox (xPos * 30 + 47, yPos * 30 - 3, xPos * 30 + 73, yPos * 30 + 23, white)
+	    drawfillbox (xPos * 30 + 47, yPos * 30 - 3, xPos * 30 + 73, yPos * 30 + 23, backgroundColor)
 	    %Clear the current letter from its box
 
 	    Font.Draw (Str.Upper (words (i) (i2 + 1)), xPos * 30 + 50, yPos * 30, letterFont, red)
@@ -383,9 +397,10 @@ body proc wordSearch (number : int)
 	end for
     end for
 
-    for i : 1 .. upper (words)
+    for i : 1 .. upper (wordList)
 	%For each element in words
-	Font.Draw (words (i), 550, 475 - i * 25, wordFont, black)
+	Font.Draw (wordList (i), 550, 475 - i * 25, wordFont, black)
+	%Display words
     end for
 
     loop
@@ -419,15 +434,44 @@ body proc wordSearch (number : int)
 		black)
 	    %Cross out word on word search
 
-	    for i : matchNumber .. upper (words) - 1
-		words (i) := words (i + 1)
-		new words, upper (words) - 1
+	    wordMatchNumber := 0
+	    wordMatch := false
+	    %Reset variables
+
+	    for i : 1 .. upper (wordList)
+		wordMatchNumber += 1
+		if words (matchNumber) = wordList (i) then
+		    wordMatch := true
+		    exit
+		    %Exit when found match
+		end if
 	    end for
-	    %From the found word to the length of array minus 1
-	    %Shift all indexes left 1, then resize array to itself minus 1
-	    %Basically deleting the word from the array
-	else
-	    put "Not a word!"
+
+	    if wordMatch = true then
+		%If found word
+		for i : wordMatchNumber .. upper (wordList) - 1
+		    wordList (i) := wordList (i + 1)
+		end for
+
+		new wordList, upper (wordList) - 1
+		%From the found word to the length of array minus 1
+		%Shift all indexes left 1, then resize array to itself minus 1
+		%Basically deleting the word from the array
+
+		drawfillbox (550, 0, 1000, 475, backgroundColor) %Erase word display area
+
+		for i : 1 .. upper (wordList)
+		    %For each element in words
+		    Font.Draw (wordList (i), 550, 475 - i * 25, wordFont, black)
+		    %Display words
+		end for
+
+		if upper (wordList) = 0 then %If there are no more words left to choose
+		    display (true)
+		    return
+		    %The user wins
+		end if
+	    end if
 	end if
     end loop
 
@@ -458,6 +502,7 @@ end goodBye
 %============
 %Main Program
 %============
+%fork changeBackgroundColor
 shuffleOrder
 intro
 

@@ -1,4 +1,4 @@
-20
+18
 Programming Languages
 ABAP 10 11 13 8 
 Assembly 10 7 3 7 
