@@ -560,7 +560,7 @@ body proc wordSearch (number : int)
 	    drawfillbox (xPos * 30 + 47, yPos * 30 - 3, xPos * 30 + 73, yPos * 30 + 23, backgroundColor)
 	    %Clear the current letter from its box
 
-	    Font.Draw (Str.Upper (words (i) (i2 + 1)), xPos * 30 + 50, yPos * 30, letterFont, red)
+	    Font.Draw (Str.Upper (words (i) (i2 + 1)), xPos * 30 + 50, yPos * 30, letterFont, black)
 	    %Add the letter into the box
 	end for
     end for
