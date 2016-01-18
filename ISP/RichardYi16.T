@@ -30,7 +30,7 @@ forward proc giveUp
 %=====================
 
 %Windows
-var window := Window.Open ("position:center;center;graphics:1000;600;nobuttonbar")
+var window := Window.Open ("position:center;center;graphics:1000;600;nobuttonbar;nocursor")
 %Only one screen, centered and max size
 
 %Buttons
@@ -47,7 +47,8 @@ var giveUpButton := GUI.CreateButton (264, 24, 0, "Give Up", giveUp) % 71
 var inputLocked : boolean := false
 var wordSearchOrder : array 1 .. 3 of int := init (1, 2, 3)
 var wordSearchCounter : int := 1
-var timeLimit, timeLeft : int
+var timed : boolean
+var timeLeft : int
 var backgroundColor : int
 %Fonts
 var titleFont := Font.New ("Verdana:30")
@@ -70,8 +71,10 @@ process playMusic (file : string)
 end playMusic
 
 process countTime
-    timeLeft -= 1
-    delay(1000)
+    loop
+	timeLeft -= 1
+	delay (1000)
+    end loop
 end countTime
 
 proc shuffleOrder
@@ -124,6 +127,7 @@ body proc title
 end title
 
 fcn userInput () : array 1 .. 4 of int
+
     var xCoord, yCoord, button : int
     %Stores mousewhere coordinates
 
@@ -138,6 +142,14 @@ fcn userInput () : array 1 .. 4 of int
     var coordinates : array 1 .. 4 of int
 
     loop
+	if timeLeft <= 0 then
+	    display (false)
+	    exit
+	end if
+
+	locate (1, 1)
+	put timeLeft
+
 	mousewhere (xCoord, yCoord, button)
 	xRange := xCoord - ((xCoord - 75) mod 30)
 	yRange := yCoord - ((yCoord - 25) mod 30)
@@ -221,8 +233,13 @@ fcn userInput () : array 1 .. 4 of int
 	    end if
 	end if
     end loop
-    
-    
+
+    %If loop is exited
+    for i : 1 .. 4 %Fill "coordinates" with -1
+	coordinates (i) := -1
+    end for
+
+    result coordinates
 end userInput
 
 proc fillRandom
@@ -285,17 +302,45 @@ body proc help
 end help
 
 body proc askTimed
+    var input : string (1)
+    var minutes, seconds : int
+
     title
+
+    GUI.Show (backToMenuButton)
+
     locate (10, 1)
     put "Do you want it to be timed?" %Font.Draw!
-    put "Type y/n"
+    put "Type y/n for yes/no"
+
+    loop
+	getch (input)
+	exit when input = "y" or input = "Y" or input = "n" or input = "N"
+	%Error-trapping
+    end loop
+
+    if input = "y" or input = "Y" then
+	timed := true
+
+	put "How many minutes and seconds should the time limit be?"
+
+	put "Minutes:  " ..
+	get minutes
+
+	put "Seconds:  " ..
+	get seconds
+
+	timeLeft := minutes * 60 + seconds
+    end if
 
     GUI.Show (confirmButton)
-    GUI.Show (backToMenuButton)
 end askTimed
 
 body proc wordSearch (number : int)
     title
+
+    fork countTime
+    %Start timer
 
     fillRandom
 
@@ -359,7 +404,7 @@ body proc wordSearch (number : int)
 	wordList (lineNumber) := word
 	%Get the word and put into word arrays
 
-	for i : 1 .. 4 %Get the 4 coordinates
+	for i : 1 .. 4     %Get the 4 coordinates
 	    get : inputStream, coordinate
 	    coordinates (lineNumber) (i) := coordinate
 	end for
@@ -407,6 +452,11 @@ body proc wordSearch (number : int)
 	inputCoordinates := userInput ()
 	%Get user input
 
+	if inputCoordinates (1) = -1 then %If userInput returns -1
+	    return
+	    %Stop proc
+	end if
+
 	matchNumber := 0
 
 	for i : 1 .. upper (coordinates)
@@ -429,7 +479,7 @@ body proc wordSearch (number : int)
 
 	locate (1, 1)
 
-	if match = true then %If a match was found
+	if match = true then     %If a match was found
 	    Draw.ThickLine (coordinates (matchNumber) (1) * 30 + 60, coordinates (matchNumber) (2) * 30 + 10, coordinates (matchNumber) (3) * 30 + 60, coordinates (matchNumber) (4) * 30 + 10, 2,
 		black)
 	    %Cross out word on word search
@@ -458,7 +508,7 @@ body proc wordSearch (number : int)
 		%Shift all indexes left 1, then resize array to itself minus 1
 		%Basically deleting the word from the array
 
-		drawfillbox (550, 0, 1000, 475, backgroundColor) %Erase word display area
+		drawfillbox (550, 0, 1000, 475, backgroundColor)     %Erase word display area
 
 		for i : 1 .. upper (wordList)
 		    %For each element in words
@@ -466,7 +516,7 @@ body proc wordSearch (number : int)
 		    %Display words
 		end for
 
-		if upper (wordList) = 0 then %If there are no more words left to choose
+		if upper (wordList) = 0 then     %If there are no more words left to choose
 		    display (true)
 		    return
 		    %The user wins
@@ -475,7 +525,6 @@ body proc wordSearch (number : int)
 	end if
     end loop
 
-    %put "Word Search ", number
     GUI.Show (giveUpButton)
     GUI.Show (backToMenuButton)
 end wordSearch
