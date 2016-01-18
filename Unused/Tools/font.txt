@@ -1,0 +1,4 @@
+Verdana
+30
+Yay, you win!
+1000 600

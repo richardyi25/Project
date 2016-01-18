@@ -7,11 +7,20 @@
  Mrs. Krasteva
  #16 Word Search ISP
  */
+
+/*
+ This program is a word search.
+ The user tries to find hidden words in a grid.
+ They have an option to plat in timed or untimed mode, and the time limit is set by them.
+ If they find all the words in the time limit, they win.
+ If fail to find all the words or give up, they lose.
+ The program repeats until the user wants to exit.
+ */
+
 %===========================
 %Procedure/Importing/Settings Declaration
 %===========================
 import GUI
-
 GUI.SetDisplayWhenCreated (false) %Buttons will only show up when GUI.Show'ed
 
 forward proc title
@@ -34,25 +43,28 @@ var window := Window.Open ("position:center;center;graphics:1000;600;nobuttonbar
 %Only one screen, centered and max size
 
 %Buttons
-var introButton := GUI.CreateButton (448, 0, 0, "Launch Game", mainMenu) % 103
-var playButton := GUI.CreateButton (256, 48, 0, "Play Game", askTimed) % 87
-var helpButton := GUI.CreateButton (239, 24, 0, "Help/Instructions", help) % 121
-var quitButton := GUI.CreateButton (272, 0, 0, "Quit", goodBye) % 55
-var backToMenuButton := GUI.CreateButton (800, 0, 0, "Go back to main menu", mainMenu) % 148
-var confirmButton := GUI.CreateButton (242, 24, 0, "Confirm Choice", goToWordSearch) % 115
-var giveUpButton := GUI.CreateButton (800, 24, 0, "Give Up", giveUp) % 71
+var introButton := GUI.CreateButton (448, 0, 0, "Launch Game", mainMenu)
+var playButton := GUI.CreateButton (457, 48, 0, "Play Game", askTimed)
+var helpButton := GUI.CreateButton (440, 24, 0, "Help/Instructions", help)
+var quitButton := GUI.CreateButton (473, 0, 0, "Quit", goodBye)
+var backToMenuButton := GUI.CreateButton (800, 0, 0, "Go back to main menu", mainMenu)
+var confirmButton := GUI.CreateButton (443, 24, 0, "Confirm Choice", goToWordSearch)
+var giveUpButton := GUI.CreateButton (800, 24, 0, "Give Up", giveUp)
 %MOVE COORDINATES!
 
 %Values
 var inputLocked : boolean := false
 var wordSearchOrder : array 1 .. 3 of int := init (1, 2, 3)
 var wordSearchCounter : int := 1
-var timed : boolean
+var timed : boolean := false
 var timeLeft : int
 var backgroundColor : int
+var firstTime : boolean := true
+
 %Fonts
 var titleFont := Font.New ("Verdana:30")
 var headerFont := Font.New ("Verdana:20")
+var regularFont := Font.New ("Verdana:15")
 %======================================
 %Procedure/Function/Process Delcaration
 %======================================
@@ -142,14 +154,20 @@ fcn userInput () : array 1 .. 4 of int
     var rise, run : int
     var coordinates : array 1 .. 4 of int
 
-    loop
-	if timeLeft <= 0 then
-	    display (false)
-	    exit
-	end if
+    loop %Display seconds left
+	if timed then
+	    Font.Draw ("Seconds left:", 720, 400, headerFont, black)
 
-	locate (1, 1)
-	put timeLeft
+	    if Time.Elapsed mod 1000 = 0 then %only every second
+		drawfillbox (720, 350, 1000, 400, backgroundColor) %erase
+		Font.Draw (intstr (timeLeft), 720, 350, headerFont, black) %display time
+	    end if
+
+	    if timeLeft <= 0 then %if time runs out
+		display (false)
+		exit
+	    end if
+	end if
 
 	mousewhere (xCoord, yCoord, button)
 	xRange := xCoord - ((xCoord - 75) mod 30)
@@ -268,14 +286,80 @@ end giveUp
 
 body proc intro
     %Fancy Animation
+    title
     Font.Draw ("Loading music...", 0, 550, headerFont, black)
     Font.Draw ("*Any delay you experience is real", 0, 500, headerFont, black)
 
     fork playMusic ("threes.mp3")
 
-    delay (200)
+    delay (1)
+
     cls
 
+    var font : int := Font.New ("Comic Sans MS:20")
+
+    for i : 0 .. 120
+	drawbox (i - 1, i - 1, 180 + i + 1, 180 + i + 1, backgroundColor)
+	drawbox (i + 1, i + 1, 180 + i - 1, 180 + i - 1, backgroundColor)  %Erase 1
+
+	drawbox (i - 1, 420 - i - 1, 180 + i + 1, 600 - i + 1, backgroundColor)
+	drawbox (i + 1, 420 - i + 1, 180 + i - 1, 600 - i - 1, backgroundColor) %Erase 2
+
+	drawbox (420 - i - 1, 420 - i - 1, 600 - i + 1, 600 - i + 1, backgroundColor)
+	drawbox (420 - i + 1, 420 - i + 1, 600 - i - 1, 600 - i - 1, backgroundColor) %Erase 3
+
+	drawbox (420 - i - 1, i - 1, 600 - i + 1, 180 + i + 1, backgroundColor)
+	drawbox (420 - i + 1, i + 1, 600 - i - 1, 180 + i - 1, backgroundColor) %Erase 4
+
+	drawbox (i, i, 180 + i, 180 + i, black)
+	drawbox (i, 420 - i, 180 + i, 600 - i, black)
+	drawbox (420 - i, 420 - i, 600 - i, 600 - i, black)
+	drawbox (420 - i, i, 600 - i, 180 + i, black)
+	%Draw 4 boxes
+
+	delay (10)
+    end for
+
+    delay (200)
+
+    for i : 120 .. 480 by 60
+	%Draw grid lines
+	drawline (i, 120, i, 480, black)
+	drawline (120, i, 480, i, black)
+    end for
+
+    for i3 : 1 .. 20 %Draw Random letters in grid
+	for i : 120 .. 420 by 60
+	    for i2 : 120 .. 420 by 60
+		drawfillbox (i + 1, i2 + 1, i + 59, i2 + 59, backgroundColor)
+		Font.Draw (chr (Rand.Int (65, 90)), i + 20, i2 + 20, font, black)
+	    end for
+	end for
+	delay (100)
+    end for
+
+    for i : 1 .. 4
+	drawfillbox (321, 480 - i * 60 + 1, 359, 480 - i * 60 + 59, backgroundColor)
+	Font.Draw ("WORD" (i), 320, 480 - i * 60 + 20, font, black)
+    end for
+
+    for i : 1 .. 6
+	drawfillbox (61 + i * 60, 301, 119 + i * 60, 359, backgroundColor)
+	Font.Draw ("SEARCH" (i), 80 + i * 60, 320, font, black)
+    end for
+
+    delay (500)
+
+    for i : 1 .. 4
+	drawfillbox (301, 480 - i * 60 + 1, 359, 480 - i * 60 + 59, yellow)
+	Font.Draw ("WORD" (i), 320, 480 - i * 60 + 20, font, blue)
+    end for
+
+    for i : 1 .. 6
+	drawfillbox (61 + i * 60, 301, 119 + i * 60, 359, yellow)
+
+	Font.Draw ("SEARCH" (i), 80 + i * 60, 320, font, blue)
+    end for
     GUI.Show (introButton)
 end intro
 
@@ -288,9 +372,47 @@ body proc mainMenu
 end mainMenu
 
 body proc help
+    var letterFont := Font.New ("Comic Sans MS:15")
+
     title
 
-    put "This is a very helpful help page." %Font.Draw!
+    cls
+
+    Font.Draw ("The purpose of the game is to find all the hidden words in the grid", 45, 570, headerFont, black)
+    Font.Draw ("Words can appear horizontally, vertically, or diagonally", 126, 530, headerFont, black)
+
+
+    for x : 440 .. 530 by 30
+	for y : 240 .. 330 by 30
+	    drawbox (x, y, x + 30, y + 30, yellow)
+	    drawbox (x + 1, y + 1, x + 29, y + 29, yellow) %Draw empty boxes
+	end for
+    end for
+
+    for i : 1 .. 4
+	Font.Draw ("WORD" (i), 447, i * 30 + 218, letterFont, black) %Draw "WORD"
+	Font.Draw ("WORD" (i), i * 30 + 417, 248, letterFont, black)
+	Font.Draw ("WORD" (i), i * 30 + 417, i * 30 + 218, letterFont, black)
+    end for
+
+    delay (2000)
+
+    Font.Draw ("To select a word, just click its first letter and last letter", 124, 460, headerFont, black)
+
+
+    delay (2000)
+
+    drawbox (440, 240, 470, 270, green) %Draw green frame
+    drawbox (441, 241, 469, 269, green)
+
+    delay (500)
+
+    drawbox (530, 330, 560, 360, green) %Draw green frame
+    drawbox (531, 329, 561, 359, green)
+
+    delay (500)
+
+    Draw.ThickLine (455, 255, 545, 345, 2, black) %Draw line connecting
 
     GUI.Show (backToMenuButton)
 end help
@@ -304,8 +426,8 @@ body proc askTimed
     GUI.Show (backToMenuButton)
 
     locate (10, 1)
-    put "Do you want it to be timed?" %Font.Draw!
-    put "Type y/n for yes/no"
+    Font.Draw ("Do you want it to be timed?", 309, 500, headerFont, black) %Font.Draw!
+    Font.Draw ("Type y/n for yes/no", 365, 460, headerFont, black)
 
     loop
 	getch (input)
@@ -316,8 +438,9 @@ body proc askTimed
     if input = "y" or input = "Y" then
 	timed := true
 
-	put "How many minutes and seconds should the time limit be?"
+	Font.Draw ("How many minutes and seconds should the time limit be?", 107, 400, regularFont, black)
 
+	locate (14, 1)
 	put "Minutes:  " ..
 	get minutes
 
@@ -336,7 +459,10 @@ body proc wordSearch (number : int)
     GUI.Show (giveUpButton)
     GUI.Show (backToMenuButton)
 
-    fork countTime
+    if timed and firstTime then
+	fork countTime
+	firstTime := false
+    end if
     %Start timer
 
     fillRandom
@@ -505,7 +631,7 @@ body proc wordSearch (number : int)
 		%Shift all indexes left 1, then resize array to itself minus 1
 		%Basically deleting the word from the array
 
-		drawfillbox (550, 0, 1000, 475, backgroundColor)     %Erase word display area
+		drawfillbox (550, 0, 700, 475, backgroundColor)     %Erase word display area
 
 		for i : 1 .. upper (wordList)
 		    %For each element in words
@@ -526,16 +652,22 @@ end wordSearch
 body proc display (win : boolean)
     title
     if win = true then
-	put "You win!"
+	colorback (72)
+	cls
+	Font.Draw ("Yay, you win!", 363, 284, titleFont, black)
     else
-	put "You lose!"
+	colorback (64)
+	cls
+	Font.Draw ("Sorry, you lost", 343, 284, titleFont, black)
     end if
     GUI.Show (backToMenuButton)
 end display
 
 body proc goodBye
     title
-    put "Thank you for using my program, etc, etc."
+    Font.Draw ("Thank you for using my program", 275, 500, headerFont, black)
+    Font.Draw ("Programed by: Richard Yi", 326, 450, headerFont, black)
+
     delay (1000)
     Music.PlayFileStop
     GUI.Quit
@@ -545,7 +677,6 @@ end goodBye
 %============
 %Main Program
 %============
-%fork changeBackgroundColor
 shuffleOrder
 intro
 
